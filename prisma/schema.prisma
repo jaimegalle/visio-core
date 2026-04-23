@@ -1,0 +1,157 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model backupinfo {
+  backupinfoid Int      @id @default(autoincrement())
+  physicalfile String   @db.VarChar(256)
+  successful   Boolean
+  startdate    DateTime @db.Timestamp(6)
+  pacientes    Int
+  consultas    Int
+  lentes       Int
+}
+
+model consult {
+  counter  Int       @id @default(autoincrement())
+  crc      Int?
+  hda      String?
+  obs      String?
+  avod     String?   @db.VarChar(31)
+  avoe     String?   @db.VarChar(31)
+  pood     String?   @db.VarChar(11)
+  pooe     String?   @db.VarChar(11)
+  kod      String?   @db.VarChar(21)
+  koe      String?   @db.VarChar(21)
+  refrod   String?   @db.VarChar(41)
+  refroe   String?   @db.VarChar(41)
+  addod    String?   @db.VarChar(21)
+  addoe    String?   @db.VarChar(21)
+  biood    String?
+  biooe    String?
+  food     String?
+  fooe     String?
+  presc    String?
+  esfod    String?   @db.VarChar(8)
+  esfoe    String?   @db.VarChar(8)
+  cilod    String?   @db.VarChar(8)
+  ciloe    String?   @db.VarChar(8)
+  eixod    String?   @db.VarChar(6)
+  eixoe    String?   @db.VarChar(6)
+  dp       String?   @db.VarChar(7)
+  lensobs  String?
+  cartas   String?
+  mask     Int?
+  packtime DateTime? @db.Timestamp(6)
+  pqod     String?   @db.VarChar(31)
+  pqoe     String?   @db.VarChar(31)
+  mespecod String?   @db.VarChar(31)
+  mespecoe String?   @db.VarChar(31)
+  esfoe2   String?   @db.VarChar(8)
+  esfod2   String?   @db.VarChar(8)
+  ciloe2   String?   @db.VarChar(8)
+  cilod2   String?   @db.VarChar(8)
+  eixoe2   String?   @db.VarChar(6)
+  eixod2   String?   @db.VarChar(6)
+  dp2      String?   @db.VarChar(7)
+  lensobs2 String?
+
+  pacient  pacient? @relation(fields: [crc], references: [crc])
+
+  @@index([crc], map: "idx_consult_crc")
+}
+
+model diag {
+  counter   Int       @id @default(autoincrement())
+  crc       Int?
+  packtimex String?   @db.VarChar(21)
+  diag      String?   @db.VarChar(31)
+  packtime  DateTime? @db.Timestamp(6)
+  pacient   pacient?  @relation(fields: [crc], references: [crc])
+
+  @@index([crc], map: "idx_diag_crc")
+}
+
+model grupos {
+  grupocodigo Int    @id @default(autoincrement())
+  gruponome   String @db.VarChar(50)
+  usersgrupos usersgrupos[]
+}
+
+model lent {
+  counter   Int       @id @default(autoincrement())
+  nome      String?   @db.VarChar(46)
+  lente     String?   @db.VarChar(21)
+  pagamento String?   @db.VarChar(21)
+  observ    String?   @db.VarChar(31)
+  diamod    String?   @db.VarChar(6)
+  diamoe    String?   @db.VarChar(6)
+  grauod    String?   @db.VarChar(31)
+  grauoe    String?   @db.VarChar(31)
+  cbod      String?   @db.VarChar(16)
+  cboe      String?   @db.VarChar(16)
+  data      DateTime? @db.Timestamp(6)
+  prescoe   String?
+  prescod   String?
+}
+
+model pacient {
+  crc       Int       @id @default(autoincrement())
+  nome      String?   @db.VarChar(61)
+  endereco  String?
+  profissao String?   @db.VarChar(21)
+  cidade    String?   @db.VarChar(31)
+  sexo      String?   @db.VarChar(2)
+  convcode  String?   @db.VarChar(21)
+  telefone  String?
+  observ    String?
+  datanasc  String?   @db.VarChar(13)
+  bairro    String?   @db.VarChar(21)
+  cep       String?   @db.VarChar(16)
+  indicacao String?   @db.VarChar(41)
+  prxcons   DateTime? @db.Timestamp(6)
+  email     String?   @db.VarChar(31)
+  diags     diag[]
+  consults  consult[]
+  picretinas picretina[]
+}
+
+model picretina {
+  counter   Int       @id @default(autoincrement())
+  data_foto DateTime? @db.Timestamp(6)
+  crc       Int
+  desc_foto String?   @db.VarChar(26)
+  obse_foto String?
+  pacient   pacient  @relation(fields: [crc], references: [crc])
+
+  @@index([crc], map: "idx_picretina_crc")
+}
+
+model prescricoes {
+  indice    Int     @id @default(autoincrement())
+  categoria String  @db.Char(3)
+  texto     String
+  descricao String? @db.VarChar(100)
+}
+
+model users {
+  usercodigo   Int    @id @default(autoincrement())
+  login        String @db.VarChar(20)
+  nomecompleto String @db.VarChar(50)
+  senha        String @db.VarChar(50)
+  usersgrupos  usersgrupos[]
+}
+
+model usersgrupos {
+  usercodigo  Int
+  grupocodigo Int
+  user        users  @relation(fields: [usercodigo], references: [usercodigo])
+  grupo       grupos @relation(fields: [grupocodigo], references: [grupocodigo])
+
+  @@id([usercodigo, grupocodigo])
+}

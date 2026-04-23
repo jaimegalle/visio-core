@@ -41,6 +41,12 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Prisma
+prisma/migrations/
+
+# Generated Prisma Client
+app/generated/prisma/
+
 # Python
 __pycache__/
 *.pyc
