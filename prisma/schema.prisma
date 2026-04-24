@@ -143,7 +143,7 @@ model users {
   usercodigo   Int    @id @default(autoincrement())
   login        String @db.VarChar(20)
   nomecompleto String @db.VarChar(50)
-  senha        String @db.VarChar(50)
+  senha        String @db.VarChar(255)
   usersgrupos  usersgrupos[]
 }
 

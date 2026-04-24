@@ -1,5 +1,6 @@
 import sys
 import traceback
+import bcrypt
 from connections import get_sqlserver_connection, get_postgres_connection
 from psycopg2.extras import execute_values
 
@@ -47,7 +48,7 @@ DDL_STATEMENTS = [
     usercodigo SERIAL PRIMARY KEY,
     login varchar(20) COLLATE pt_br_ci_ai NOT NULL,
     nomecompleto varchar(50) COLLATE pt_br_ci_ai NOT NULL,
-    senha varchar(50) COLLATE pt_br_ci_ai NOT NULL
+    senha varchar(255) COLLATE pt_br_ci_ai NOT NULL
 )""",
     """CREATE TABLE usersgrupos (
     usercodigo integer NOT NULL,
@@ -182,6 +183,11 @@ TABLES = [
         ],
         "serial_col": "usercodigo",
         "serial_seq": "users_usercodigo_seq",
+        "transforms": {
+            "senha": lambda plain: bcrypt.hashpw(
+                plain.encode("utf-8"), bcrypt.gensalt(rounds=10)
+            ).decode("utf-8"),
+        },
     },
     {
         "source": "JJUsersGrupos",
@@ -275,6 +281,7 @@ def migrate_table(ss_conn, pg_conn, config):
     source = config["source"]
     target = config["target"]
     columns = config["columns"]
+    transforms = config.get("transforms", {})
 
     source_cols = ", ".join(f"[{c[0]}]" for c in columns)
     target_cols = ", ".join(c[1] for c in columns)
@@ -296,17 +303,27 @@ def migrate_table(ss_conn, pg_conn, config):
         if not rows:
             break
         batch_num += 1
-        batch = [tuple(row) for row in rows]
+
+        transformed_batch = []
+        for row in rows:
+            row_tuple = tuple(row)
+            if transforms:
+                row_list = list(row_tuple)
+                for i, (_, col_name) in enumerate(columns):
+                    if col_name in transforms and row_list[i] is not None:
+                        row_list[i] = transforms[col_name](row_list[i])
+                row_tuple = tuple(row_list)
+            transformed_batch.append(row_tuple)
 
         try:
-            execute_values(pg_cur, batch_sql, batch)
+            execute_values(pg_cur, batch_sql, transformed_batch)
             pg_conn.commit()
-            migrated += len(batch)
+            migrated += len(transformed_batch)
         except Exception as e:
             pg_conn.rollback()
-            print(f"    Batch {batch_num} failed ({len(batch)} rows): {e}")
+            print(f"    Batch {batch_num} failed ({len(transformed_batch)} rows): {e}")
             print(f"    Retrying row by row...")
-            for row in batch:
+            for row in transformed_batch:
                 try:
                     pg_cur.execute(single_sql, tuple(row))
                     pg_conn.commit()
